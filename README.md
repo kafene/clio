@@ -12,18 +12,28 @@ composer.json configuration is:
 ```
 {
     "require": {
-        "clio/clio": "@stable"
+        "clio/clio": "0.1.8"
     }
 }
 ```
 
-PHP 5.3.2 or newer is required; PHP 5.4 is strongly recommended. This library is
-developed on and is meant to be used on POSIX systems with the posix, pcntl, and
-sockets extensions loaded.
+PHP 5.4 is required. This library is developed on and is meant to be used on
+POSIX systems with the posix, pcntl, and sockets extensions loaded.
 
 ## Console
 
 The Console class provides helpers for interactive command line input/output.
+
+### Console::stdin($raw = false)
+
+Waits for user input. If `$raw` is set to `true`, returns the input without
+right trimming for `PHP_EOL`.
+
+### Console::input($prompt = null, $raw = false)
+
+Asks the user for input which ends when the user types a `PHP_EOL` character.
+You can optionally provide a prompt string. If `$raw` is set to `true`, returns
+the input without right trimming for `PHP_EOL`. 
 
 ### Console::stdout($text, $raw = false)
 
@@ -62,6 +72,7 @@ This function prompts the user for input. Several options are available:
 - `default`: If the user does not provide an input, this is the default value.
 - `pattern`: Regular expression pattern to match.
 - `validator`: Callable to validate input. Must return `true` or `false`.
+- `error`: Default error message.
 
 If an input error occurs, the prompt will repeat and will keep asking the user
 for input until it satisfies all the requirements in the `$options` array. Note
@@ -71,6 +82,26 @@ that if you supply a `default` option, `required` is not enforced.
 <?php
 $db_host = Console::prompt('database host', ['default' => 'localhost']);
 ```
+
+If you provide your own validator callable, you can pass a custom error message
+to the second parameter:
+
+```php
+<?php
+$file = Console::prompt('File', [
+    'required' => true,
+    'validator' => function($input, &$error = null) {
+        if (is_readable($input)) {
+            return true;
+        } else {
+            $error = 'Path given is not a readable file';
+            return false;
+        }
+    }
+]);
+```
+
+Note that for this to work, the second parameter must be declared a reference.
 
 ### Console::confirm($text)
 
@@ -96,7 +127,7 @@ $opt = Console::select('apply this patch?',
 );
 ```
 
-### Console::work(Closure $callable)
+### Console::work(callable $callable)
 
 Forks another process to run `$callable` in the background while showing status
 updates to the standard output. By default the status update is a simple spinner
@@ -132,8 +163,32 @@ Console::output('this is %rcolored%n and %Bstyled%n');
 
 The `%n` specifier normalizes the color and style of the text to that of the
 shell's defaults. This specifier is taken from PEAR's Console_Color package.
-Consult the source code for the full set of specifiers. To print a percentage
-symbol, simply put two `%` characters.
+To print a percentage symbol, simply put two `%` characters. The following is
+the full set of specifiers:
+
+```
+            text      text            background
+------------------------------------------------
+%k %K %0    black     dark grey       black
+%r %R %1    red       bold red        red
+%g %G %2    green     bold green      green
+%y %Y %3    yellow    bold yellow     yellow
+%b %B %4    blue      bold blue       blue
+%m %M %5    magenta   bold magenta    magenta
+%p %P       magenta (think: purple)
+%c %C %6    cyan      bold cyan       cyan
+%w %W %7    white     bold white      white
+
+%F     Blinking, Flashing
+%U     Underline
+%8     Reverse
+%_,%9  Bold
+
+%n     Resets the color
+%%     A single %
+```
+
+You can use these specifiers with methods that takes a string and outputs it.
 
 ## Daemon
 
@@ -153,9 +208,9 @@ if (Daemon::isRunning('/path/to/process.pid')) {
 }
 ```
 
-### Daemon::work(array $options, Closure $callable)
+### Daemon::work(array $options, callable $callable)
 
-Daemonize a `$callable` Closure object. The `$options` key-value array must
+Daemonize a `$callable` callable object. The `$options` key-value array must
 contain `pid` as the path to the PID file:
 
 ```php

@@ -206,10 +206,27 @@ class Console
     }
 
     /**
+     * Asks the user for input. Ends when the user types a PHP_EOL. Optionally
+     * provide a prompt.
+     *
+     * @param string $prompt String prompt (optional)
+     * @param bool   $raw If set to true, returns the raw string without trimming
+     *
+     * @return string User input
+     */
+    public static function input($prompt = null, $raw = false)
+    {
+        if (isset($prompt)) {
+            static::stdout($prompt);
+        }
+        return static::stdin($raw);
+    }
+
+    /**
      * Prints text to STDOUT.
      *
-     * @param string $text
-     * @param bool   $raw
+     * @param string $text String to write to STDOUT
+     * @param bool   $raw  Write string as-is; defaults to false
      *
      * @return int|false Number of bytes printed or false on error
      */
@@ -225,10 +242,23 @@ class Console
     }
 
     /**
+     * Prints text to STDOUT appended with a PHP_EOL.
+     *
+     * @param string $text String to write to STDOUT
+     * @param bool   $raw  Write string as-is; defaults to false
+     *
+     * @return int|false Number of bytes printed or false on error
+     */
+    public static function output($text = null, $raw = false)
+    {
+        return static::stdout($text . PHP_EOL, $raw);
+    }
+
+    /**
      * Prints text to STDERR.
      *
-     * @param string $text
-     * @param bool   $raw
+     * @param string $text String to write to STDERR
+     * @param bool   $raw  Write string as-is; defaults to false
      *
      * @return int|false Number of bytes printed or false on error
      */
@@ -246,43 +276,14 @@ class Console
     /**
      * Prints text to STDERR appended with a PHP_EOL.
      *
-     * @param string $text
-     * @param bool   $raw
+     * @param string $text String to write to STDERR
+     * @param bool   $raw  Write string as-is; defaults to false
      *
      * @return int|false Number of bytes printed or false on error
      */
     public static function error($text = null, $raw = false)
     {
         return static::stderr($text . PHP_EOL, $raw);
-    }
-
-    /**
-     * Asks the user for input. Ends when the user types a PHP_EOL. Optionally
-     * provide a prompt.
-     *
-     * @param string $prompt String prompt (optional)
-     *
-     * @return string User input
-     */
-    public static function input($prompt = null)
-    {
-        if (isset($prompt)) {
-            static::stdout($prompt);
-        }
-        return static::stdin();
-    }
-
-    /**
-     * Prints text to STDOUT appended with a PHP_EOL.
-     *
-     * @param string $text
-     * @param bool   $raw
-     *
-     * @return int|false Number of bytes printed or false on error
-     */
-    public static function output($text = null, $raw = false)
-    {
-        return static::stdout($text . PHP_EOL, $raw);
     }
 
     /**
@@ -332,7 +333,7 @@ class Console
     /**
      * Asks the user for a simple yes/no confirmation.
      *
-     * @param string $text    Prompt string
+     * @param string $text Prompt string
      *
      * @return bool Either true or false
      */
@@ -377,11 +378,13 @@ class Console
      * the return value of the background process, or false if the process fork
      * failed.
      *
-     * @param Closure $callable Closure object
+     * @throws \Exception
+     *
+     * @param callable $callable Closure object
      *
      * @return int|false Process exit status
      */
-    public static function work(\Closure $callable)
+    public static function work(callable $callable)
     {
         if (!extension_loaded('pcntl')) {
             throw new \Exception('pcntl extension required');
